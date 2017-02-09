@@ -1,0 +1,42 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: sample-app-mysql
+spec:
+  replicas: 5
+  template:
+    metadata:
+      labels:
+        app: sample-app-mysql
+      annotations:
+        pod.boostport.com/vault-approle: sample-app
+        pod.boostport.com/vault-init-container: install
+        pod.beta.kubernetes.io/init-containers: '[
+          {
+            "name": "install",
+            "image": "boostport/kubernetes-vault-init:0.2.0",
+            "env": [
+                {
+                    "name": "VAULT_ROLE_ID",
+                    "value": "ca7ea803-b89c-3f9b-80f1-42da28fa99db"
+                }
+            ],
+            "volumeMounts": [
+                {
+                    "name": "vault-token",
+                    "mountPath": "/var/run/secrets/boostport.com"
+                }
+            ]
+          }
+        ]'
+    spec:
+      containers:
+      - name: sample-app
+        image: simonswine/vault-demo:latest
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: vault-token
+          mountPath: /var/run/secrets/vault
+      volumes:
+      - name: vault-token
+        emptyDir: {}
